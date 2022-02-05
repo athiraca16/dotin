@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\EmployeeLeave;
 use App\Models\Salary;
 use Carbon\Carbon;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -76,13 +77,12 @@ class UserController extends Controller
     {
         $user   = User::find($id);
         $salary = $user->salary;
-        $employeeLeave  = EmployeeLeave::where('employee_id', $user->id)->first();
-        Salary::where('employee_id', $user->id)->delete();
+        $employeeLeave  = EmployeeLeave::where('employee_id', $user->id)->latest('updated_at')->first();
         $leaveMonth = $employeeLeave->month;
         $date =  Carbon::parse($leaveMonth)->format('m');
-        $employeeSalary = 0;
+        $currentMonth = Carbon::parse($month)->format('m');
 
-        if ($date == $month) {
+        if ($date == $currentMonth) {
 
             $days =  Carbon::parse($leaveMonth)->daysInMonth;
             if ($employeeLeave->leave > 1) {
@@ -91,16 +91,17 @@ class UserController extends Controller
             } else {
                 $employeeSalary = $salary;
             }
-            Salary::updateOrCreate([
+            Salary::create([
                 'employee_id' => $user->id,
                 'basic_salary' => $salary,
-                'payable_amount' => $employeeSalary,
+                'payable_amount' => round($employeeSalary),
                 'credited_month' => $leaveMonth,
             ]);
-        } else {
-            return response()->json('Leave in this month is not updated');
+            return response()->json(round($employeeSalary));
         }
+        $employeeSalary = $salary;
 
-        return response()->json($employeeSalary);
+
+        return response()->json(round($employeeSalary));
     }
 }

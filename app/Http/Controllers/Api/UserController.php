@@ -73,17 +73,18 @@ class UserController extends Controller
      *
      * @return Response
      */
-    public function calculateSalary($id, $month)
+    public function calculateSalary($id, $date)
     {
-        $user   = User::find($id);
-        $salary = $user->salary;
-        $employeeLeave  = EmployeeLeave::where('employee_id', $user->id)->latest('updated_at')->first();
-        $leaveMonth = $employeeLeave->month;
-        $date =  Carbon::parse($leaveMonth)->format('m');
-        $currentMonth = Carbon::parse($month)->format('m');
+        try {
+            $user   = User::findOrFail($id);
+            $salary = $user->salary;
+            $month = Carbon::parse($date);
+            $lastMonth = $month->subMonth()->format('m');
+            $employeeLeave  = EmployeeLeave::where('employee_id', $user->id)
+                ->whereMonth('month', '=', $lastMonth)->first();
+            // calculate salary
 
-        if ($date == $currentMonth) {
-
+            $leaveMonth = $employeeLeave->month;
             $days =  Carbon::parse($leaveMonth)->daysInMonth;
             if ($employeeLeave->leave > 1) {
                 $presentDay = $days - ($employeeLeave->leave);
@@ -98,10 +99,30 @@ class UserController extends Controller
                 'credited_month' => $leaveMonth,
             ]);
             return response()->json(round($employeeSalary));
+        } catch (Exception $e) {
+            return response()->json('error' . $e->getMessage(), 422);
         }
-        $employeeSalary = $salary;
+    }
+    /**
+     * get total leaves in a year
+     *
+     * @param  \Illuminate\Http\Request $request
+     *
+     * @return Response
+     */
+    public function yearlyLeave($id, $year)
+    {
+        $user   = User::find($id);
+        var_dump($year->year);
+        //$year   = Carbon::parse($year)->format('year');
+        dd($year);
+        $employeeLeave = DB::table('employee_leaves')
+            ->where('employee_id', $user->id)
+
+            ->whereYear('month', $year)
+            ->sum('leave');
 
 
-        return response()->json(round($employeeSalary));
+        return response()->json($employeeLeave);
     }
 }

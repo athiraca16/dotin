@@ -24,12 +24,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
  // employees
  Route::resource('employees', UserController::class);
+ Route::get('yearly/leave/{id}/{year}',[UserController::class,'yearlyLeave']);
  Route::post('login', [LoginController::class,'login']);
  //leave
  Route::get('leaves',[LeaveController::class,'index']);
+ 
  Route::post('leave/employee', [LeaveController::class,'store']);
 // calculate salary
- Route::get('calculate/salary/{id}/{month}', [UserController::class,'calculateSalary']);
+ Route::get('calculate/salary/{id}/{date}', [UserController::class,'calculateSalary']);
  // salary
  Route::get('salaries',[AdminUserController::class,'index']);
  Route::post('payment/{id}/status',[AdminUserController::class,'updateStatus']);

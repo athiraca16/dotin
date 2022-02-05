@@ -7,6 +7,8 @@ use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\EmployeeLeave;
+use App\Models\Salary;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,7 +23,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        
+
         $user = User::with('leaves')->get();
 
         return UserResource::collection($user);
@@ -63,20 +65,42 @@ class UserController extends Controller
             return response()->json('error' . $e->getMessage(), 422);
         }
     }
-     /**
+    /**
      * calculate salary
      *
      * @param  \Illuminate\Http\Request $request
      *
      * @return Response
      */
-    public function calculateSalary($id,$month)
+    public function calculateSalary($id, $month)
     {
-            $user   = User::find($id);
-            $salary = $user->salary;
-            $leave  = EmployeeLeave::where('employee_id',$user->id)->first();
-            
-           
-    } 
-    
+        $user   = User::find($id);
+        $salary = $user->salary;
+        $employeeLeave  = EmployeeLeave::where('employee_id', $user->id)->first();
+        Salary::where('employee_id', $user->id)->delete();
+        $leaveMonth = $employeeLeave->month;
+        $date =  Carbon::parse($leaveMonth)->format('m');
+        $employeeSalary = 0;
+
+        if ($date == $month) {
+
+            $days =  Carbon::parse($leaveMonth)->daysInMonth;
+            if ($employeeLeave->leave > 1) {
+                $presentDay = $days - ($employeeLeave->leave);
+                $employeeSalary = ($salary / $days) * $presentDay;
+            } else {
+                $employeeSalary = $salary;
+            }
+            Salary::updateOrCreate([
+                'employee_id' => $user->id,
+                'basic_salary' => $salary,
+                'payable_amount' => $employeeSalary,
+                'credited_month' => $leaveMonth,
+            ]);
+        } else {
+            return response()->json('Leave in this month is not updated');
+        }
+
+        return response()->json($employeeSalary);
+    }
 }

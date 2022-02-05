@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\LeaveController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\Auth\LoginController;
 
 
@@ -29,6 +30,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
  //leave
  Route::get('leaves',[LeaveController::class,'index']);
  Route::post('leave/employee', [LeaveController::class,'store']);
-
- Route::get('calculate/salary/{id}', [UserController::class,'calculateSalary']);
- 
+// calculate salary
+ Route::get('calculate/salary/{id}/{month}', [UserController::class,'calculateSalary']);
+ // salary
+ Route::get('salaries',[AdminUserController::class,'index']);
+ Route::post('payment/{id}/status',[AdminUserController::class,'updateStatus']);
